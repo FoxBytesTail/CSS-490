@@ -46,8 +46,8 @@ public class CBIR extends JFrame {
     private JPanel panelBottom2;
     private JPanel panelTop;
     private JPanel buttonPanel;
-    private Double [][] intensityMatrix = new Double [101][26];
-    private Double [][] colorCodeMatrix = new Double [100][64];
+    private int [][] intensityMatrix = new int [100][26];
+    private int [][] colorCodeMatrix = new int [100][64];
     private Map <Double , LinkedList<Integer>> map;
     int picNo = 0;
     int imageCount = 1; //keeps up with the number of images displayed since the first page.
@@ -69,7 +69,7 @@ public class CBIR extends JFrame {
     public CBIR() {
       //The following lines set up the interface including the layout of the buttons and JPanels.
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("Icon Demo: Please Select an Image");        
+        setTitle("Program 1: Daniel Grimm");        
         panelBottom1 = new JPanel();
         panelBottom2 = new JPanel();
         panelTop = new JPanel();
@@ -92,14 +92,14 @@ public class CBIR extends JFrame {
         panelTop.add(photographLabel);
 
         panelTop.add(buttonPanel);
-        JButton previousPage = new JButton("Previous Page");
-        JButton nextPage = new JButton("Next Page");
         JButton intensity = new JButton("Intensity");
         JButton colorCode = new JButton("Color Code");
-        buttonPanel.add(previousPage);
-        buttonPanel.add(nextPage);
+        JButton previousPage = new JButton("Previous Page");
+        JButton nextPage = new JButton("Next Page");
         buttonPanel.add(intensity);
         buttonPanel.add(colorCode);
+        buttonPanel.add(previousPage);
+        buttonPanel.add(nextPage);
         
         nextPage.addActionListener(new nextPageHandler());
         previousPage.addActionListener(new previousPageHandler());
@@ -120,7 +120,6 @@ public class CBIR extends JFrame {
                 
                  if(icon != null){
                     button[i] = new JButton(icon);
-                    //panelBottom1.add(button[i]);
                     button[i].addActionListener(new IconButtonHandler(i, icon));
                     buttonOrder[i] = i;
                 }
@@ -135,45 +134,54 @@ public class CBIR extends JFrame {
      * The contents of the matrix are processed and stored in a two dimensional array called intensityMatrix.
     */
     public void readIntensityFile(){
-      //System.out.println("Hello");
-      StringTokenizer token;
-      Scanner read;
-      Double intensityBin;
+      Scanner read = null;
       String line = "";
       int lineNumber = 0;
          try{
-           read =new Scanner(new File ("intensity.txt"));
-          
-           /////////////////////
-   		 ///your code///
-   		 /////////////////
+           read = new Scanner(new File ("intensity.txt"));
+           while (read.hasNextLine()) {
+        	   line = read.nextLine();//grab each line
+        	   Scanner readLine = new Scanner(line);
+        	   int counter = 0;
+        	   while (readLine.hasNext()) {
+        		   String token = readLine.next();
+        		   intensityMatrix[lineNumber][counter++] = Integer.parseInt(token);
+        	   }
+        	   readLine.close();
+        	   lineNumber++;
+           }
          }
          catch(FileNotFoundException EE){
            System.out.println("The file intensity.txt does not exist");
          }
-      
+      read.close();
     }
     
     /*This method opens the color code text file containing the color code matrix with the histogram bin values for each image.
      * The contents of the matrix are processed and stored in a two dimensional array called colorCodeMatrix.
     */
     private void readColorCodeFile(){
-      StringTokenizer token;
-      Scanner read;
-      Double colorCodeBin;
+      Scanner read = null;
+      String line = "";
       int lineNumber = 0;
          try{
-           read =new Scanner(new File ("colorCodes.txt"));
-          
-           /////////////////////
-    		///your code///
-   		 /////////////////
+           read = new Scanner(new File ("colorCodes.txt"));
+           while (read.hasNextLine()) {
+        	   line = read.nextLine();
+        	   Scanner readLine = new Scanner(line);
+        	   int counter = 0;
+        	   while (readLine.hasNext()) {
+        		   String token = readLine.next();
+        		   colorCodeMatrix[lineNumber][counter++] = Integer.parseInt(token);
+        	   }
+        	   readLine.close();
+        	   lineNumber++;
+           }
          }
          catch(FileNotFoundException EE){
-           System.out.println("The file intensity.txt does not exist");
+           System.out.println("The file colorCodes.txt does not exist");
          }
-      
-      
+      read.close();
     }
     
     /*This method displays the first twenty images in the panelBottom.  The for loop starts at number one and gets the image
