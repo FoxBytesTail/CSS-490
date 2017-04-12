@@ -1,4 +1,6 @@
-/* Project 1
+/* Program 1 CSS 490 Multimedia Database Systems
+ * @author Daniel Grimm
+ * @since April 11th, 2017
 */
 
 import java.awt.BorderLayout;
@@ -35,22 +37,22 @@ import javax.swing.*;
 public class CBIR extends JFrame {
     
     private JLabel photographLabel = new JLabel();  //container to hold a large 
-    private JButton [] button; //creates an array of JButtons
-    private int [] buttonOrder = new int [101]; //creates an array to keep up with the image order
-    private double [] imageSize = new double[101]; //keeps up with the image sizes
+    private static JButton [] button; //creates an array of JButtons
+    private static int[] buttonOrder = new int [101]; //creates an array to keep up with the image order
+    private static int[] imageSize = new int[101]; //keeps up with the image sizes
     private GridLayout gridLayout1;
     private GridLayout gridLayout2;
     private GridLayout gridLayout3;
     private GridLayout gridLayout4;
-    private JPanel panelBottom1;
+    private static JPanel panelBottom1;
     private JPanel panelBottom2;
     private JPanel panelTop;
     private JPanel buttonPanel;
     private int [][] intensityMatrix = new int [100][26];
     private int [][] colorCodeMatrix = new int [100][64];
-    private Map <Double , LinkedList<Integer>> map;
+    private Map <Integer , LinkedList<Integer>> map;
     int picNo = 0;
-    int imageCount = 1; //keeps up with the number of images displayed since the first page.
+    static int imageCount = 1; //keeps up with the number of images displayed since the first page.
     int pageNo = 1;
     
     
@@ -117,6 +119,7 @@ public class CBIR extends JFrame {
         for (int i = 1; i < 101; i++) {
                 ImageIcon icon;
                 icon = new ImageIcon(getClass().getResource("images/" + i + ".jpg"));
+                imageSize[i] = icon.getIconWidth() * icon.getIconHeight();
                 
                  if(icon != null){
                     button[i] = new JButton(icon);
@@ -188,18 +191,53 @@ public class CBIR extends JFrame {
      * number stored in the buttonOrder array and assigns the value to imageButNo.  The button associated with the image is 
      * then added to panelBottom1.  The for loop continues this process until twenty images are displayed in the panelBottom1
     */
-    private void displayFirstPage(){
+    private static void displayFirstPage(){
       int imageButNo = 0;
       panelBottom1.removeAll(); 
       for(int i = 1; i < 21; i++){
-        //System.out.println(button[i]);
         imageButNo = buttonOrder[i];
         panelBottom1.add(button[imageButNo]); 
-        imageCount ++;
+        imageCount++;
       }
-      panelBottom1.revalidate();  
+      panelBottom1.revalidate();
       panelBottom1.repaint();
 
+    }
+    
+    //Sorts the distance so that the screen may be refreshed
+    protected static void sortDistanceIntensity(double[] distance) {
+  	  for (int i = 1; i < 101; i++) {
+  		  for (int j = 1; j < 100; j++) {
+  			  if (distance[j] > distance[j + 1]) {
+  				  //swap distances
+  				  double temporary = distance[j + 1];//swap distance
+  				  distance[j + 1] = distance[j];
+  				  distance[j] = temporary;
+  				  //swap buttons and image size
+  				  int temp = buttonOrder[j + 1];//swap buttons
+  				  buttonOrder[j + 1] = buttonOrder[j];
+  				  buttonOrder[j] = temp;
+  			  }
+  		  }
+  	  }
+  }
+    
+    //bubble sort to sort by the colorCode
+    protected static void sortDistanceColorCode(double[] distance) {
+    	for (int i = 1; i < 101; i++) {
+    		  for (int j = 1; j < 100; j++) {
+    			  if (distance[j] > distance[j + 1]) {
+    				  //swap distances
+    				  double temporary = distance[j + 1];
+    				  distance[j + 1] = distance[j];
+    				  distance[j] = temporary;
+    				  //swap buttons and image size
+    				  int temp = buttonOrder[j + 1];
+    				  buttonOrder[j + 1] = buttonOrder[j];
+    				  buttonOrder[j] = temp;
+    			  }
+    		  }
+    	  }
     }
     
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
@@ -289,17 +327,30 @@ public class CBIR extends JFrame {
 
       public void actionPerformed( ActionEvent e){
           double [] distance = new double [101];
-          map = new HashMap<Double, LinkedList<Integer>>();
-          double d = 0;
-          int compareImage = 0;
-          int pic = (picNo - 1);
-          int picIntensity = 0;
-          double picSize = imageSize[pic];
+          map = new HashMap<Integer, LinkedList<Integer>>();
+          int pic = picNo;
           
-         /////////////////////
-    ///your code///
-    /////////////////
-      
+          for (int i = 0; i < 26; i++) {//fill the map
+        	  map.put((int) readImage.intensityBins[i], new LinkedList<Integer>());
+        	  for (int j = 0; j < 100; j++) {//add to the linked list
+        		  LinkedList<Integer> temp = map.get((int) readImage.intensityBins[i]);
+        		  temp.add(intensityMatrix[j][i]);
+        	  }
+          }
+          
+          //Manhattan Distance
+          double sum = 0;
+          for (int i = 1; i < 101; i++) {
+        	  for (int j = 0; j < 26; j++) {
+        		  //Manhattan Distance Formula
+        		  sum += Math.abs((double)((double)intensityMatrix[i - 1][j]/(double)(imageSize[i - 1]))
+        				  - (double)((double)intensityMatrix[pic][j]/(double)(imageSize[pic])));
+        	  }
+        	  distance[i] = sum;
+        	  sum = 0;
+          }
+          
+          sortDistanceIntensity(distance);//sorts to allow refreshing
     }
   }
     
@@ -314,15 +365,30 @@ public class CBIR extends JFrame {
 
       public void actionPerformed( ActionEvent e){
           double [] distance = new double [101];
-          map = new HashMap<Double, LinkedList<Integer>>();
-          double d = 0;
-          int compareImage = 0;
+          map = new HashMap<Integer, LinkedList<Integer>>();
           int pic = (picNo - 1);
-          int picIntensity = 0;
-          double picSize = imageSize[pic];
-          /////////////////////
-    ///your code///
-    /////////////////
+          
+          for (int i = 0; i < 64; i++) {//fills the map
+        	  map.put((int) readImage.colorCodeBins[i], new LinkedList<Integer>());
+        	  for (int j = 0; j < 100; j++) {
+        		  LinkedList<Integer> temp = map.get((int) readImage.colorCodeBins[i]);
+        		  temp.add(colorCodeMatrix[j][i]);
+        	  }
+          }
+          
+        //Manhattan Distance
+          double sum = 0;
+          for (int i = 1; i < 101; i++) {
+        	  for (int j = 0; j < 64; j++) {
+        		  //Manhattan Distance Formula
+        		  sum += Math.abs((double)((double)colorCodeMatrix[i - 1][j]/(double)(imageSize[i - 1]))
+        				  - (double)((double)colorCodeMatrix[pic][j]/(double)(imageSize[pic])));
+        	  }
+        	  distance[i] = sum;
+        	  sum = 0;
+          }
+          
+          sortDistanceColorCode(distance);//sorts to allow refreshing
       }
     }
 }
