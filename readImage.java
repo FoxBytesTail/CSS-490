@@ -1,5 +1,7 @@
-/*
- * Project 1
+/*Program 1 CSS 490 Multimedia Database Systems
+ * @author Daniel Grimm
+ * @since April 11th, 2017
+ * 
 */
 
 import java.awt.image.BufferedImage;
@@ -9,7 +11,6 @@ import java.io.*;
 import java.util.*;
 import javax.imageio.ImageIO;
 import java.awt.Color;
-
 
 public class readImage
 {
@@ -46,8 +47,7 @@ public class readImage
     	  //kept for backwards compatibility
           icon = new ImageIcon(getClass().getResource("images/" + imageCount++ + ".jpg"));
 		try {
-			File file = new File("C:\\Users\\Local Admin\\Documents\\workspace\\CSS 490\\bin\\images\\"
-					+ (imageCount - 1) + ".jpg");//TODO: Make File Path generic
+			File file = new File("bin/images/" + (imageCount - 1) + ".jpg");
 			image = ImageIO.read(file);
 		} catch (Exception e) {
 			System.out.println("File Not Found.");
@@ -68,6 +68,7 @@ public class readImage
       imagesArray[imageCount - 2] = image;
     }
     
+    //prints to the file
     printIntensityMatrixToFile();//prints the intensity matrix to the file
     printColorCodeMatrixToFile();//prints the colorCode matrix to the file
     
@@ -76,28 +77,30 @@ public class readImage
     intensity.close();//close the file
   }
   
-  //intensity method
+  //Returns the intensity of the BufferedImage argument
   public int[] getIntensity(BufferedImage image) {
 	  int[] intensity = new int[26];
 	  int index = indexOfImage(image);
 	  if (index < 0) {
 		  return intensity;
 	  }
-	  for (int i = 0; i < 26; i++) {
+	  for (int i = 0; i < 26; i++) {//fills out the array with the intensity values
 		  intensity[i] = intensityMatrix[index][i];
 	  }
 	  return intensity;
   }
   
+  //returns the index of the BufferedImage
   private static int indexOfImage(BufferedImage image) {
 	  for (int i = 0; i < imagesArray.length; i++) {
 		  if (image.toString().equals(imagesArray[i].toString())) {
 			  return i;
 		  }
 	  }
-	  return - 1;
+	  return - 1;//image not found
   }
   
+  //Finds the color code of the provided image
   public int[] getColorCode(BufferedImage image) {
 	  int[] colorCode = new int[64];
 	  int index = indexOfImage(image);
@@ -106,17 +109,19 @@ public class readImage
 			  colorCode[i] = colorCodeMatrix[index][i];
 		  }
 	  }
-	  return colorCode;
+	  return colorCode;//returns the color code of the provided argument
   }
   
+  //Changes a color into it's RGB color values
   private static int[] colorToRGB(int color) {
 	  int[] rgb = new int[3];
 	  rgb[0] = (color & 0x00ff0000) >> 16;//red
 	  rgb[1] = (color & 0x0000ff00) >> 8;//green
 	  rgb[2] = color & 0x000000ff;//blue
-	  return rgb;
+	  return rgb;//int[] of values
   }
   
+  //Fills up the intensityMatrix with values.
   private static void placeIntoIntensityMatrix(int[] rgb, int row) {
 	  //Intensity = 0.299R + 0.587G + 0.114B
 	  double intensity = ((double) rgb[0] * 0.299) + ((double) rgb[1] * 0.587) + ((double) rgb[2] * 0.114);
@@ -124,6 +129,7 @@ public class readImage
 	  ++intensityMatrix[row][binNumber];
   }
   
+  //Returns the bin number for the given intensity
   private static int getBinNumber(double intensity) {
 	  int bin = 0;
 	  for (int i = 0; i < 25; i++) {
@@ -132,9 +138,10 @@ public class readImage
 			  return (bin - 1);
 		  }
 	  }
-	  return bin;
+	  return bin;//bin number
   }
   
+  //prints the intensity matrix into a file
   private static void printIntensityMatrixToFile() {
 	  for (int i = 0; i < 100; i++) {
 		  for (int j = 0; j < 26; j++) {
@@ -144,6 +151,7 @@ public class readImage
 	  }
   }
   
+  //Changes the RGB values into a color code matrix
   private static void placeIntoColorCodeMatrix(int[] rgb, int row) {
 	  String firstTwoBits = Integer.toBinaryString(rgb[0]);//change to a binary
 	  String secondTwoBits = Integer.toBinaryString(rgb[1]);//string representation
@@ -172,10 +180,11 @@ public class readImage
 		  }
 		  else { result += "00"; }//zeros
 	  }
-	  int sixBits = Integer.parseInt(result, 2);
+	  int sixBits = Integer.parseInt(result, 2);//decimal representation of the bit string
 	  ++colorCodeMatrix[row][sixBits];
   }
   
+  //prints the color code matrix to the file
   private static void printColorCodeMatrixToFile() {
 	  for (int i = 0; i < 100; i++) {
 		  for (int j = 0; j < 64; j++) {
@@ -190,7 +199,6 @@ public class readImage
 	  if (image == null) {
 		  throw new NullPointerException();
 	  }
-	  //TODO: Write the algorithm.
 	  for (int i = 0; i < image.getHeight(); i++) {
 		  for (int j = 0; j < image.getWidth(); j++) {
 			  int color = image.getRGB(j, i);
@@ -239,5 +247,4 @@ public class readImage
   {
 	  new readImage();
   }
-
 }
