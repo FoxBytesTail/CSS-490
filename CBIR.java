@@ -220,6 +220,7 @@ public class CBIR extends JFrame {
   			  }
   		  }
   	  }
+  	  //displayFirstPage();
   }
     
     //bubble sort to sort by the colorCode
@@ -238,6 +239,7 @@ public class CBIR extends JFrame {
     			  }
     		  }
     	  }
+    	
     }
     
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
