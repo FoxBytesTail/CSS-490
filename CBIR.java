@@ -36,14 +36,20 @@ import javax.swing.*;
 
 public class CBIR extends JFrame {
     
+	private static boolean imageSelected = false;
+	private double[] CCPlusIntensity = new double[101];
+	private double[] RF = new double[101];
+	private static JCheckBox[] checkbox;
     private JLabel photographLabel = new JLabel();  //container to hold a large 
     private static JButton [] button; //creates an array of JButtons
+    private static ImageIcon[] button2;//creates an array of ImageIcon objects
     private static int[] buttonOrder = new int [101]; //creates an array to keep up with the image order
     private static int[] imageSize = new int[101]; //keeps up with the image sizes
     private GridLayout gridLayout1;
     private GridLayout gridLayout2;
     private GridLayout gridLayout3;
     private GridLayout gridLayout4;
+    private GroupLayout groupLayout;
     private static JPanel panelBottom1;
     private JPanel panelBottom2;
     private JPanel panelTop;
@@ -55,6 +61,13 @@ public class CBIR extends JFrame {
     static int imageCount = 1; //keeps up with the number of images displayed since the first page.
     int pageNo = 1;
     
+    JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");//TODO: Make the checkbox bigger
+    JButton intensity = new JButton("Intensity");
+    JButton colorCode = new JButton("Color Code");
+    JButton previousPage = new JButton("Previous Page");
+    JButton nextPage = new JButton("Next Page");
+    JButton colorPlusIntensity = new JButton("Color-Code + Intensity");
+    //TODO: after changing pages the checkboxes disappear
     
     public static void main(String args[]) {
 
@@ -71,21 +84,36 @@ public class CBIR extends JFrame {
     public CBIR() {
       //The following lines set up the interface including the layout of the buttons and JPanels.
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("Program 1: Daniel Grimm");        
-        panelBottom1 = new JPanel();
+        setTitle("Program 2: Daniel Grimm");    
+        checkbox = new JCheckBox[101];
+        panelBottom1 = new JPanel();//JPanels
         panelBottom2 = new JPanel();
         panelTop = new JPanel();
         buttonPanel = new JPanel();
         gridLayout1 = new GridLayout(4, 5, 5, 5);
         gridLayout2 = new GridLayout(2, 1, 5, 5);
         gridLayout3 = new GridLayout(1, 2, 5, 5);
-        gridLayout4 = new GridLayout(2, 3, 5, 5);
+        gridLayout4 = new GridLayout(3, 2, 70, 10);
+        groupLayout = new GroupLayout(panelBottom1);
+        GroupLayout.SequentialGroup sGroup1 = groupLayout.createSequentialGroup();
+        /*GroupLayout.SequentialGroup sGroup2 = groupLayout.createSequentialGroup();//TODO: Delete me?
+        GroupLayout.SequentialGroup sGroup3 = groupLayout.createSequentialGroup();
+        GroupLayout.SequentialGroup sGroup4 = groupLayout.createSequentialGroup();*/
+        
+        panelBottom1.setBackground(new Color(51, 0, 111));//Husky Purple
+        panelBottom2.setBackground(new Color(51, 0, 111));
+        panelTop.setBackground(new Color(51, 0, 111));
+        buttonPanel.setBackground(new Color(51, 0, 111));
+        
         setLayout(gridLayout2);
-        panelBottom1.setLayout(gridLayout1);
+        panelBottom1.setLayout(gridLayout1);//TODO: change to grouplayout
+       // panelBottom1.setLayout(new GroupLayout(panelBottom1));//TODO:Change for demo
         panelBottom2.setLayout(gridLayout1);
         panelTop.setLayout(gridLayout3);
         add(panelTop);
         add(panelBottom1);
+        //TODO: make twenty panels of the height and width of the image so that each image displays properly.
+        
         photographLabel.setVerticalTextPosition(JLabel.BOTTOM);
         photographLabel.setHorizontalTextPosition(JLabel.CENTER);
         photographLabel.setHorizontalAlignment(JLabel.CENTER);
@@ -94,25 +122,50 @@ public class CBIR extends JFrame {
         panelTop.add(photographLabel);
 
         panelTop.add(buttonPanel);
-        JButton intensity = new JButton("Intensity");
-        JButton colorCode = new JButton("Color Code");
-        JButton previousPage = new JButton("Previous Page");
-        JButton nextPage = new JButton("Next Page");
+        
+        intensity.setEnabled(false);
+        colorCode.setEnabled(false);
+        previousPage.setEnabled(true);
+        nextPage.setEnabled(true);
+        colorPlusIntensity.setEnabled(false);
+        
+        Font buttonFont = new Font("SansSerif", Font.BOLD, 26);
+        intensity.setFont(buttonFont);
+        colorCode.setFont(buttonFont);
+        previousPage.setFont(buttonFont);
+        nextPage.setFont(buttonFont);
+        colorPlusIntensity.setFont(buttonFont);
+        
+        relevanceFeedback.setEnabled(false);
+        relevanceFeedback.setFont(buttonFont);
+        
         buttonPanel.add(intensity);
         buttonPanel.add(colorCode);
-        buttonPanel.add(previousPage);
         buttonPanel.add(nextPage);
+        buttonPanel.add(colorPlusIntensity);
+        buttonPanel.add(previousPage);
+        buttonPanel.add(relevanceFeedback);
         
         nextPage.addActionListener(new nextPageHandler());
         previousPage.addActionListener(new previousPageHandler());
         intensity.addActionListener(new intensityHandler());
         colorCode.addActionListener(new colorCodeHandler());
-        setSize(1100, 750);
+        
+        setSize(1400, 1100);
         // this centers the frame on the screen
         setLocationRelativeTo(null);
         
-        
         button = new JButton[101];
+        button2 = new ImageIcon[101];
+        
+        for (int i = 1; i < 101; i++)
+        {
+        	JCheckBox relevant = new JCheckBox("Relevant");
+        	relevant.setFont(new Font("Serif", Font.BOLD, 18));
+            relevant.setEnabled(false);//TODO: Create method to enable the checkboxes
+        	checkbox[i] = relevant;
+        }
+        
         /*This for loop goes through the images in the database and stores them as icons and adds
          * the images to JButtons and then to the JButton array
         */
@@ -124,6 +177,9 @@ public class CBIR extends JFrame {
                  if(icon != null){
                     button[i] = new JButton(icon);
                     button[i].addActionListener(new IconButtonHandler(i, icon));
+                    button[i].setSize(icon.getIconWidth(), icon.getIconHeight());
+                    button2[i] = icon;
+                    //button2[i].addActionListener(new IconButtonHandler(i, icon));
                     buttonOrder[i] = i;
                 }
         }
@@ -196,7 +252,8 @@ public class CBIR extends JFrame {
       panelBottom1.removeAll(); 
       for(int i = 1; i < 21; i++){
         imageButNo = buttonOrder[i];
-        panelBottom1.add(button[imageButNo]); 
+        panelBottom1.add(button[imageButNo]);
+        panelBottom1.add(checkbox[i]);
         imageCount++;
       }
       panelBottom1.revalidate();
@@ -227,7 +284,7 @@ public class CBIR extends JFrame {
     protected static void sortDistanceColorCode(double[] distance) {
     	for (int i = 1; i < 101; i++) {
     		  for (int j = 1; j < 100; j++) {
-    			  if (distance[j] > distance[j + 1]) {
+    			  if (distance[j] >= distance[j + 1]) {
     				  //swap distances
     				  double temporary = distance[j + 1];
     				  distance[j + 1] = distance[j];
@@ -240,6 +297,32 @@ public class CBIR extends JFrame {
     		  }
     	  }
     	
+    }
+    
+    protected void enableButtons() {//enable buttons and relevance feedback.
+    	relevanceFeedback.setEnabled(true);
+    	//TODO:Enable the rest of the checkboxes
+    	intensity.setEnabled(true);
+    	colorCode.setEnabled(true);
+        previousPage.setEnabled(true);
+        nextPage.setEnabled(true);
+        colorPlusIntensity.setEnabled(true);
+        for (int i = 1; i <= 100; i++) {
+        	checkbox[i].setEnabled(true);
+        }
+    }
+    
+    protected void refresh() {
+    	panelBottom1.removeAll();
+        int count = imageCount;
+        int imageButNo = 0;
+        for (int i = imageCount - 20; i < count; i++) {
+      	  imageButNo = buttonOrder[i];
+            panelBottom1.add(button[imageButNo]);
+            panelBottom1.add(checkbox[i]);
+        }
+        panelBottom1.revalidate();
+        panelBottom1.repaint();
     }
     
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
@@ -257,6 +340,10 @@ public class CBIR extends JFrame {
       public void actionPerformed( ActionEvent e){
         photographLabel.setIcon(iconUsed);
         picNo = pNo;
+        if (!imageSelected) {
+        	enableButtons();
+        }
+        imageSelected = true;
       }
       
     }
@@ -276,6 +363,9 @@ public class CBIR extends JFrame {
             for (int i = imageCount; i < endImage; i++) {
                     imageButNo = buttonOrder[i];
                     panelBottom1.add(button[imageButNo]);
+                    
+                    panelBottom1.add(checkbox[i]);
+                    
                     imageCount++;
           
             }
@@ -306,6 +396,7 @@ public class CBIR extends JFrame {
             for (int i = startImage; i < endImage; i++) {
                     imageButNo = buttonOrder[i];
                     panelBottom1.add(button[imageButNo]);
+                    panelBottom1.add(checkbox[i]);
                     imageCount--;
           
             }
@@ -353,6 +444,7 @@ public class CBIR extends JFrame {
           }
           
           sortDistanceIntensity(distance);//sorts to allow refreshing
+          refresh();
     }
   }
     
@@ -370,6 +462,7 @@ public class CBIR extends JFrame {
           map = new HashMap<Integer, LinkedList<Integer>>();
           int pic = (picNo - 1);
           
+          //-------------------Code Snippet copied by other students for program 2--------------------
           for (int i = 0; i < 64; i++) {//fills the map
         	  map.put((int) readImage.colorCodeBins[i], new LinkedList<Integer>());
         	  for (int j = 0; j < 100; j++) {
@@ -377,13 +470,15 @@ public class CBIR extends JFrame {
         		  temp.add(colorCodeMatrix[j][i]);
         	  }
           }
+          //------------------------------End of Code Snippet--------------------------------
+          
           
         //Manhattan Distance
           double sum = 0;
           for (int i = 1; i < 101; i++) {
         	  for (int j = 0; j < 64; j++) {
         		  //Manhattan Distance Formula
-        		  sum += Math.abs((double)((double)colorCodeMatrix[i - 1][j]/(double)(imageSize[i - 1]))
+        		  sum += Math.abs((double)((double)colorCodeMatrix[i - 1][j]/(double)(imageSize[i]))//i - 1?
         				  - (double)((double)colorCodeMatrix[pic][j]/(double)(imageSize[pic])));
         	  }
         	  distance[i] = sum;
@@ -391,6 +486,7 @@ public class CBIR extends JFrame {
           }
           
           sortDistanceColorCode(distance);//sorts to allow refreshing
+          refresh();
       }
     }
 }
