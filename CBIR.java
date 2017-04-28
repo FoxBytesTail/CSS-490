@@ -54,20 +54,21 @@ public class CBIR extends JFrame {
     private JPanel panelBottom2;
     private JPanel panelTop;
     private JPanel buttonPanel;
-    private int [][] intensityMatrix = new int [100][26];
-    private int [][] colorCodeMatrix = new int [100][64];
+    private static int [][] intensityMatrix = new int [100][26];
+    private static int [][] colorCodeMatrix = new int [100][64];
     private Map <Integer , LinkedList<Integer>> map;
-    int picNo = 0;
+    static int picNo = 0;
     static int imageCount = 1; //keeps up with the number of images displayed since the first page.
     int pageNo = 1;
+    private static double[] distance = new double[100];
+    private static double[] weight = new double[100];
     
-    JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");//TODO: Make the checkbox bigger
+    JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");
     JButton intensity = new JButton("Intensity");
     JButton colorCode = new JButton("Color Code");
     JButton previousPage = new JButton("Previous Page");
     JButton nextPage = new JButton("Next Page");
     JButton colorPlusIntensity = new JButton("Color-Code + Intensity");
-    //TODO: after changing pages the checkboxes disappear
     
     public static void main(String args[]) {
 
@@ -95,10 +96,6 @@ public class CBIR extends JFrame {
         gridLayout3 = new GridLayout(1, 2, 5, 5);
         gridLayout4 = new GridLayout(3, 2, 70, 10);
         groupLayout = new GroupLayout(panelBottom1);
-        GroupLayout.SequentialGroup sGroup1 = groupLayout.createSequentialGroup();
-        /*GroupLayout.SequentialGroup sGroup2 = groupLayout.createSequentialGroup();//TODO: Delete me?
-        GroupLayout.SequentialGroup sGroup3 = groupLayout.createSequentialGroup();
-        GroupLayout.SequentialGroup sGroup4 = groupLayout.createSequentialGroup();*/
         
         panelBottom1.setBackground(new Color(51, 0, 111));//Husky Purple
         panelBottom2.setBackground(new Color(51, 0, 111));
@@ -106,8 +103,7 @@ public class CBIR extends JFrame {
         buttonPanel.setBackground(new Color(51, 0, 111));
         
         setLayout(gridLayout2);
-        panelBottom1.setLayout(gridLayout1);//TODO: change to grouplayout
-       // panelBottom1.setLayout(new GroupLayout(panelBottom1));//TODO:Change for demo
+        panelBottom1.setLayout(gridLayout1);
         panelBottom2.setLayout(gridLayout1);
         panelTop.setLayout(gridLayout3);
         add(panelTop);
@@ -150,6 +146,7 @@ public class CBIR extends JFrame {
         previousPage.addActionListener(new previousPageHandler());
         intensity.addActionListener(new intensityHandler());
         colorCode.addActionListener(new colorCodeHandler());
+        colorPlusIntensity.addActionListener(new CCPlusIntensity());
         
         setSize(1400, 1100);
         // this centers the frame on the screen
@@ -162,8 +159,13 @@ public class CBIR extends JFrame {
         {
         	JCheckBox relevant = new JCheckBox("Relevant");
         	relevant.setFont(new Font("Serif", Font.BOLD, 18));
-            relevant.setEnabled(false);//TODO: Create method to enable the checkboxes
+            relevant.setEnabled(false);
         	checkbox[i] = relevant;
+        	checkbox[i].addActionListener(new RF());
+        }
+        
+        for (int i = 0; i < weight.length; i++) {
+        	weight[i] = 1.0/(double) weight.length;
         }
         
         /*This for loop goes through the images in the database and stores them as icons and adds
@@ -253,7 +255,7 @@ public class CBIR extends JFrame {
       for(int i = 1; i < 21; i++){
         imageButNo = buttonOrder[i];
         panelBottom1.add(button[imageButNo]);
-        panelBottom1.add(checkbox[i]);
+        panelBottom1.add(checkbox[imageButNo]);
         imageCount++;
       }
       panelBottom1.revalidate();
@@ -261,57 +263,43 @@ public class CBIR extends JFrame {
 
     }
     
-    //Sorts the distance so that the screen may be refreshed
-    protected static void sortDistanceIntensity(double[] distance) {
-  	  for (int i = 1; i < 101; i++) {
-  		  for (int j = 1; j < 100; j++) {
-  			  if (distance[j] > distance[j + 1]) {
-  				  //swap distances
-  				  double temporary = distance[j + 1];//swap distance
-  				  distance[j + 1] = distance[j];
-  				  distance[j] = temporary;
-  				  //swap buttons and image size
-  				  int temp = buttonOrder[j + 1];//swap buttons
-  				  buttonOrder[j + 1] = buttonOrder[j];
-  				  buttonOrder[j] = temp;
-  			  }
-  		  }
-  	  }
-  	  //displayFirstPage();
-  }
-    
     //bubble sort to sort by the colorCode
-    protected static void sortDistanceColorCode(double[] distance) {
+    protected static void sortDistance() {
+    	//reset buttonOrder
     	for (int i = 1; i < 101; i++) {
-    		  for (int j = 1; j < 100; j++) {
-    			  if (distance[j] >= distance[j + 1]) {
-    				  //swap distances
-    				  double temporary = distance[j + 1];
-    				  distance[j + 1] = distance[j];
-    				  distance[j] = temporary;
-    				  //swap buttons and image size
-    				  int temp = buttonOrder[j + 1];
-    				  buttonOrder[j + 1] = buttonOrder[j];
-    				  buttonOrder[j] = temp;
-    			  }
-    		  }
-    	  }
+    		buttonOrder[i] = i;
+    	}
     	
+    	//bubble sort of the values for distance
+    	for (int i = 1; i <= 100; i++) {
+    		for (int j = 1; j < 100; j++) {
+    			if (distance[j - 1] > distance[j]) {
+    				//swap button order
+    				int temp = buttonOrder[j];
+    				buttonOrder[j] = buttonOrder[j + 1];
+    				buttonOrder[j + 1] = temp;
+    				
+    				//swap distance order
+    				double temporary = distance[j - 1];
+    				distance[j - 1] = distance[j];
+    				distance[j] = temporary;
+    			}
+    		}
+    	}
     }
     
-    protected void enableButtons() {//enable buttons and relevance feedback.
+    //enable buttons and relevance feedback.
+    protected void enableButtons() {
     	relevanceFeedback.setEnabled(true);
-    	//TODO:Enable the rest of the checkboxes
     	intensity.setEnabled(true);
     	colorCode.setEnabled(true);
         previousPage.setEnabled(true);
         nextPage.setEnabled(true);
         colorPlusIntensity.setEnabled(true);
-        for (int i = 1; i <= 100; i++) {
-        	checkbox[i].setEnabled(true);
-        }
+        relevanceFeedback.addActionListener(new relevanceFeedbackEnabled());
     }
     
+    //redraw the bottom panel
     protected void refresh() {
     	panelBottom1.removeAll();
         int count = imageCount;
@@ -323,6 +311,30 @@ public class CBIR extends JFrame {
         }
         panelBottom1.revalidate();
         panelBottom1.repaint();
+    }
+    
+    private static double manhattanCC(int index) {
+    	int testPicture = picNo - 1;
+    	double distance = 0;
+    	for (int i = 0; i < 64; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = colorCodeMatrix[index][i] / (double) imageSize[index + 1];
+    		double weightTwo = colorCodeMatrix[testPicture][i] / (double) imageSize[picNo];
+    		distance += Math.abs(weightOne - weightTwo);
+    	}
+    	return distance;
+    }
+    
+    private static double manhattanIntensity(int index) {
+    	int testPicture = picNo - 1;
+    	double distance = 0;
+    	for (int i = 0; i < 26; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = intensityMatrix[index][i] / (double) imageSize[index + 1];
+    		double weightTwo = intensityMatrix[testPicture][i] / (double) imageSize[picNo];
+    		distance += Math.abs(weightOne - weightTwo);
+    	}
+    	return distance;
     }
     
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
@@ -408,6 +420,15 @@ public class CBIR extends JFrame {
       
     }
     
+    //allows the checkboxes to be used for relevance feedback.
+    private class relevanceFeedbackEnabled implements ActionListener {
+    	public void actionPerformed (ActionEvent e) {
+    		for (int i = 1; i < checkbox.length; i++) {
+    			checkbox[i].setEnabled(true);
+    		}
+    	}
+    }
+    
     
     /*This class implements an ActionListener when the user selects the intensityHandler button.  The image number that the
      * user would like to find similar images for is stored in the variable pic.  pic takes the image number associated with
@@ -419,32 +440,16 @@ public class CBIR extends JFrame {
     private class intensityHandler implements ActionListener{
 
       public void actionPerformed( ActionEvent e){
-          double [] distance = new double [101];
-          map = new HashMap<Integer, LinkedList<Integer>>();
-          int pic = picNo;
-          
-          for (int i = 0; i < 26; i++) {//fill the map
-        	  map.put((int) readImage.intensityBins[i], new LinkedList<Integer>());
-        	  for (int j = 0; j < 100; j++) {//add to the linked list
-        		  LinkedList<Integer> temp = map.get((int) readImage.intensityBins[i]);
-        		  temp.add(intensityMatrix[j][i]);
+          for (int i = 0; i < 100; i++) {
+        	  if (i == (picNo - 1)) {
+        		  distance[i] = 0;
+        		  continue;
         	  }
+        	  distance[i] = manhattanIntensity(i);
           }
           
-          //Manhattan Distance
-          double sum = 0;
-          for (int i = 1; i < 101; i++) {
-        	  for (int j = 0; j < 26; j++) {
-        		  //Manhattan Distance Formula
-        		  sum += Math.abs((double)((double)intensityMatrix[i - 1][j]/(double)(imageSize[i - 1]))
-        				  - (double)((double)intensityMatrix[pic][j]/(double)(imageSize[pic])));
-        	  }
-        	  distance[i] = sum;
-        	  sum = 0;
-          }
-          
-          sortDistanceIntensity(distance);//sorts to allow refreshing
-          refresh();
+         sortDistance();
+          refresh();//update gui
     }
   }
     
@@ -458,35 +463,39 @@ public class CBIR extends JFrame {
     private class colorCodeHandler implements ActionListener{
 
       public void actionPerformed( ActionEvent e){
-          double [] distance = new double [101];
-          map = new HashMap<Integer, LinkedList<Integer>>();
-          int pic = (picNo - 1);
-          
-          //-------------------Code Snippet copied by other students for program 2--------------------
-          for (int i = 0; i < 64; i++) {//fills the map
-        	  map.put((int) readImage.colorCodeBins[i], new LinkedList<Integer>());
-        	  for (int j = 0; j < 100; j++) {
-        		  LinkedList<Integer> temp = map.get((int) readImage.colorCodeBins[i]);
-        		  temp.add(colorCodeMatrix[j][i]);
-        	  }
-          }
-          //------------------------------End of Code Snippet--------------------------------
-          
-          
-        //Manhattan Distance
-          double sum = 0;
-          for (int i = 1; i < 101; i++) {
-        	  for (int j = 0; j < 64; j++) {
-        		  //Manhattan Distance Formula
-        		  sum += Math.abs((double)((double)colorCodeMatrix[i - 1][j]/(double)(imageSize[i]))//i - 1?
-        				  - (double)((double)colorCodeMatrix[pic][j]/(double)(imageSize[pic])));
-        	  }
-        	  distance[i] = sum;
-        	  sum = 0;
-          }
-          
-          sortDistanceColorCode(distance);//sorts to allow refreshing
+              
+    	  for (int i = 0; i < 100; i++) {//for one hundred photos
+    		  if (i == (picNo - 1)) {
+    			  distance[i] = 0;
+    			continue;
+    		  }
+    		  distance[i] = manhattanCC(i);//get the Manhattan distance for color coding
+    	  }
+    	  sortDistance();
           refresh();
-      }
+       }
+    }
+    
+    private class CCPlusIntensity implements ActionListener {
+    	
+    	public void actionPerformed(ActionEvent e) {
+    		for (int i = 0; i < 100; i++) {//for one hundred photos
+      		  if (i == (picNo - 1)) {
+      			  distance[i] = 0;
+      			continue;
+      		  }
+      		  distance[i] = manhattanCC(i);//get the Manhattan distance for color coding
+      		  distance[i] += manhattanIntensity(i);//get the Manhattan distance for intensity
+      	  }
+    		sortDistance();
+    		refresh();
+    	}
+    }
+    
+    private class RF implements ActionListener {
+    	
+    	public void actionPerformed(ActionEvent e) {
+    		
+    	}
     }
 }
