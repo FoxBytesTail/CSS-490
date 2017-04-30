@@ -61,7 +61,9 @@ public class CBIR extends JFrame {
     static int imageCount = 1; //keeps up with the number of images displayed since the first page.
     int pageNo = 1;
     private static double[] distance = new double[100];
-    private static double[] weight = new double[100];
+    private static double[] weight = new double[90];
+    private static double[][] submatrix = new double[0][90];
+    private static int submatrixSize = 0;
     
     JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");
     JButton intensity = new JButton("Intensity");
@@ -87,6 +89,7 @@ public class CBIR extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Program 2: Daniel Grimm");    
         checkbox = new JCheckBox[101];
+        
         panelBottom1 = new JPanel();//JPanels
         panelBottom2 = new JPanel();
         panelTop = new JPanel();
@@ -155,13 +158,14 @@ public class CBIR extends JFrame {
         button = new JButton[101];
         button2 = new ImageIcon[101];
         
-        for (int i = 1; i < 101; i++)
+        for (int i = 0; i < 101; i++)
         {
         	JCheckBox relevant = new JCheckBox("Relevant");
         	relevant.setFont(new Font("Serif", Font.BOLD, 18));
             relevant.setEnabled(false);
         	checkbox[i] = relevant;
-        	checkbox[i].addActionListener(new RF());
+        	checkbox[i].addActionListener(new RF(i));
+        	checkbox[i].setMnemonic(i);
         }
         
         for (int i = 0; i < weight.length; i++) {
@@ -266,6 +270,16 @@ public class CBIR extends JFrame {
     //bubble sort to sort by the colorCode
     protected static void sortDistance() {
     	//reset buttonOrder
+    	for (int i = 0; i < checkbox.length; i++) {
+    		for (int j = 0; j < checkbox.length - 1; j++) {
+    			if (checkbox[j].getMnemonic() > checkbox[j + 1].getMnemonic()) {
+    				JCheckBox tempo = checkbox[j];
+    				checkbox[j] = checkbox[j + 1];
+    				checkbox[j + 1] = tempo;
+    			}
+    		}
+    	}
+    	
     	for (int i = 1; i < 101; i++) {
     		buttonOrder[i] = i;
     	}
@@ -283,6 +297,10 @@ public class CBIR extends JFrame {
     				double temporary = distance[j - 1];
     				distance[j - 1] = distance[j];
     				distance[j] = temporary;
+    				
+    				JCheckBox tempo = checkbox[j];
+    				checkbox[j] = checkbox[j + 1];
+    				checkbox[j + 1] = tempo;
     			}
     		}
     	}
@@ -307,7 +325,7 @@ public class CBIR extends JFrame {
         for (int i = imageCount - 20; i < count; i++) {
       	  imageButNo = buttonOrder[i];
             panelBottom1.add(button[imageButNo]);
-            panelBottom1.add(checkbox[i]);
+            panelBottom1.add(checkbox[i]);//TODO:Display this checkbox
         }
         panelBottom1.revalidate();
         panelBottom1.repaint();
@@ -337,6 +355,86 @@ public class CBIR extends JFrame {
     	return distance;
     }
     
+    private static double CCPlusIntensity(int index) {//TODO: multiply by the weight
+    	return manhattanIntensity(index) + manhattanCC(index);
+    }
+    
+    private static double average(double[] array) {
+    	double sum = 0;
+    	int counter = 0;
+    	for (int i = 0; i < array.length; i++) {
+    		sum += array[i];
+    		counter++;
+    	}
+    	sum /= counter;
+    	return sum;
+    }
+    
+    private static double stdev(double[] array, double mean) {
+    	double sum = 0;
+    	int counter = 0;
+    	for (int i = 0; i < array.length; i++) {
+    		sum += ((array[i] - mean) * (array[i] - mean));
+    		counter++;
+    	}
+    	sum /= counter;
+    	
+    	return Math.sqrt(sum);
+    }
+    
+    private static void addToSubmatrix(int index) {
+    	double[][] array = new double[submatrixSize][90];
+    	for (int i = 0; i < submatrixSize - 1; i++) {
+    		for (int j = 0; j < 90; j++) {
+    			array[i][j] = submatrix[i][j];
+    		}
+    	}
+    	
+    	double distance = 0;
+    	for (int i = 0; i < 26; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = intensityMatrix[index - 1][i] / (double) imageSize[index];
+    		double weightTwo = intensityMatrix[picNo - 1][i] / (double) imageSize[picNo];
+    		distance = Math.abs(weightOne - weightTwo);
+    		array[submatrixSize - 1][i] = distance;
+    	}
+    	distance = 0;
+    	for (int i = 0; i < 64; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = colorCodeMatrix[index - 1][i] / (double) imageSize[index];
+    		double weightTwo = colorCodeMatrix[picNo - 1][i] / (double) imageSize[picNo];
+    		distance = Math.abs(weightOne - weightTwo);
+    		array[submatrixSize - 1][i + 26] = distance;
+    	}
+    	
+    	submatrix = array;
+    }
+    
+    private static void updateWeights() {
+    	double sum = 0;
+    	for (int i = 0; i < 90; i++) {
+    		double[] array = new double[submatrixSize];
+    		for (int j = 0; j < submatrixSize; j++) {
+    			array[j] = submatrix[j][i];
+    		}
+    		double avg = average(array);
+    		double stdv = stdev(array, avg);
+    		if (stdv == 0) {
+    			stdv = 1000000.0;
+    		}
+    		weight[i] = 1/stdv;
+    		sum += weight[i];
+    	}
+    	for (int i = 0; i < 90; i++) {
+    		double normalized = weight[i] / sum;
+    		weight[i] = normalized;
+    	}
+    }
+    
+    private static void updateDistance() {//TODO: multiply the distance by the weight
+    	
+    }
+    
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
      * the button is added to the photographLabel and the picNo is set to the image number selected and being displayed.
     */ 
@@ -352,6 +450,7 @@ public class CBIR extends JFrame {
       public void actionPerformed( ActionEvent e){
         photographLabel.setIcon(iconUsed);
         picNo = pNo;
+        checkbox[picNo].setSelected(true);
         if (!imageSelected) {
         	enableButtons();
         }
@@ -484,9 +583,8 @@ public class CBIR extends JFrame {
       			  distance[i] = 0;
       			continue;
       		  }
-      		  distance[i] = manhattanCC(i);//get the Manhattan distance for color coding
-      		  distance[i] += manhattanIntensity(i);//get the Manhattan distance for intensity
-      	  }
+      		  distance[i] = CCPlusIntensity(i);
+      	    }
     		sortDistance();
     		refresh();
     	}
@@ -494,8 +592,43 @@ public class CBIR extends JFrame {
     
     private class RF implements ActionListener {
     	
+    	int index;
+    	
+    	public RF(int index) {
+    		this.index = index;
+    	}
+    	
     	public void actionPerformed(ActionEvent e) {
+    		/*Algorithm for RF
+    		 * add the new image to the submatrix
+    		 * Update weights
+    		 * sortDistance();
+    		 * */
     		
+    		submatrixSize = 0;
+    		for (int i = 1; i < checkbox.length; i++) {
+    			if (checkbox[i].isSelected()) { submatrixSize++; }
+    		}
+    		
+    		submatrix = new double[submatrixSize][90];
+    		addToSubmatrix(index);
+    		
+    		updateWeights();
+    		
+    		updateDistance();//TODO: Fill this out
+    		
+    		for (int i = 0; i < 100; i++) {//for one hundred photos
+        	  if (i == (picNo - 1)) {
+        		 distance[i] = 0;
+        		 continue;
+        	  }
+        	  distance[i] = CCPlusIntensity(i);
+            }
+    		
+    		sortDistance();
+    		refresh();
     	}
     }
 }
+
+
