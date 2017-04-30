@@ -54,23 +54,23 @@ public class CBIR extends JFrame {
     private JPanel panelBottom2;
     private JPanel panelTop;
     private JPanel buttonPanel;
-    private static int [][] intensityMatrix = new int [100][26];
-    private static int [][] colorCodeMatrix = new int [100][64];
+    private static int [][] intensityMatrix = new int [100][26];//matrix of intensity histogram
+    private static int [][] colorCodeMatrix = new int [100][64];//matrix of color code histogram
     private Map <Integer , LinkedList<Integer>> map;
-    static int picNo = 0;
+    static int picNo = 0;//picture number selected by user
     static int imageCount = 1; //keeps up with the number of images displayed since the first page.
-    int pageNo = 1;
-    private static double[] distance = new double[100];
-    private static double[] weight = new double[90];
-    private static double[][] submatrix = new double[0][90];
-    private static int submatrixSize = 0;
+    int pageNo = 1;//
+    private static double[] distance = new double[100];//distance from this photo to the selected photo
+    private static double[] weight = new double[90];//weight of each photo
+    private static double[][] submatrix = new double[0][90];//submatrix of relevant images
+    private static int submatrixSize = 0;//how many images are in the submatrix?
     
-    JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");
-    JButton intensity = new JButton("Intensity");
-    JButton colorCode = new JButton("Color Code");
-    JButton previousPage = new JButton("Previous Page");
-    JButton nextPage = new JButton("Next Page");
-    JButton colorPlusIntensity = new JButton("Color-Code + Intensity");
+    JCheckBox relevanceFeedback = new JCheckBox("Relevance Feedback");//sort with relevance feedback
+    JButton intensity = new JButton("Intensity");//sort by intensity
+    JButton colorCode = new JButton("Color Code");//sort by color code
+    JButton previousPage = new JButton("Previous Page");//go to the next page
+    JButton nextPage = new JButton("Next Page");//go to the previous page
+    JButton colorPlusIntensity = new JButton("Color-Code + Intensity");//sort by both color code and intensity
     
     public static void main(String args[]) {
 
@@ -87,7 +87,7 @@ public class CBIR extends JFrame {
     public CBIR() {
       //The following lines set up the interface including the layout of the buttons and JPanels.
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("Program 2: Daniel Grimm");    
+        setTitle("Program 2: Daniel Grimm");//set the title of the applet
         checkbox = new JCheckBox[101];
         
         panelBottom1 = new JPanel();//JPanels
@@ -100,6 +100,7 @@ public class CBIR extends JFrame {
         gridLayout4 = new GridLayout(3, 2, 70, 10);
         groupLayout = new GroupLayout(panelBottom1);
         
+        //change the background to husky purple
         panelBottom1.setBackground(new Color(51, 0, 111));//Husky Purple
         panelBottom2.setBackground(new Color(51, 0, 111));
         panelTop.setBackground(new Color(51, 0, 111));
@@ -111,7 +112,6 @@ public class CBIR extends JFrame {
         panelTop.setLayout(gridLayout3);
         add(panelTop);
         add(panelBottom1);
-        //TODO: make twenty panels of the height and width of the image so that each image displays properly.
         
         photographLabel.setVerticalTextPosition(JLabel.BOTTOM);
         photographLabel.setHorizontalTextPosition(JLabel.CENTER);
@@ -122,12 +122,14 @@ public class CBIR extends JFrame {
 
         panelTop.add(buttonPanel);
         
+        //enable buttons after an image is selected
         intensity.setEnabled(false);
         colorCode.setEnabled(false);
         previousPage.setEnabled(true);
         nextPage.setEnabled(true);
         colorPlusIntensity.setEnabled(false);
         
+        //change the font of the buttons
         Font buttonFont = new Font("SansSerif", Font.BOLD, 26);
         intensity.setFont(buttonFont);
         colorCode.setFont(buttonFont);
@@ -135,9 +137,11 @@ public class CBIR extends JFrame {
         nextPage.setFont(buttonFont);
         colorPlusIntensity.setFont(buttonFont);
         
+        //RF not enabled yet
         relevanceFeedback.setEnabled(false);
         relevanceFeedback.setFont(buttonFont);
         
+        //add the buttons
         buttonPanel.add(intensity);
         buttonPanel.add(colorCode);
         buttonPanel.add(nextPage);
@@ -145,12 +149,14 @@ public class CBIR extends JFrame {
         buttonPanel.add(previousPage);
         buttonPanel.add(relevanceFeedback);
         
+        //enable the buttons to be clicked
         nextPage.addActionListener(new nextPageHandler());
         previousPage.addActionListener(new previousPageHandler());
         intensity.addActionListener(new intensityHandler());
         colorCode.addActionListener(new colorCodeHandler());
         colorPlusIntensity.addActionListener(new CCPlusIntensity());
         
+        //set the size of the window
         setSize(1400, 1100);
         // this centers the frame on the screen
         setLocationRelativeTo(null);
@@ -160,14 +166,17 @@ public class CBIR extends JFrame {
         
         for (int i = 0; i < 101; i++)
         {
+        	//add the checkboxes to the database
         	JCheckBox relevant = new JCheckBox("Relevant");
         	relevant.setFont(new Font("Serif", Font.BOLD, 18));
             relevant.setEnabled(false);
+            //enable the checkboxes to be clickable
         	checkbox[i] = relevant;
         	checkbox[i].addActionListener(new RF(i));
-        	checkbox[i].setMnemonic(i);
+        	checkbox[i].setMnemonic(i);//used for sorting
         }
         
+        //initial weight is 1/N
         for (int i = 0; i < weight.length; i++) {
         	weight[i] = 1.0/(double) weight.length;
         }
@@ -176,10 +185,11 @@ public class CBIR extends JFrame {
          * the images to JButtons and then to the JButton array
         */
         for (int i = 1; i < 101; i++) {
-                ImageIcon icon;
+                ImageIcon icon;//creates the images
                 icon = new ImageIcon(getClass().getResource("images/" + i + ".jpg"));
                 imageSize[i] = icon.getIconWidth() * icon.getIconHeight();
                 
+                //creates the images
                  if(icon != null){
                     button[i] = new JButton(icon);
                     button[i].addActionListener(new IconButtonHandler(i, icon));
@@ -190,63 +200,63 @@ public class CBIR extends JFrame {
                 }
         }
 
-        readIntensityFile();
-        readColorCodeFile();
-        displayFirstPage();
+        readIntensityFile();//read in the values of intensity
+        readColorCodeFile();//read in the values for colorCode
+        displayFirstPage();//display the gui
     }
     
     /*This method opens the intensity text file containing the intensity matrix with the histogram bin values for each image.
      * The contents of the matrix are processed and stored in a two dimensional array called intensityMatrix.
     */
     public void readIntensityFile(){
-      Scanner read = null;
+      Scanner read = null;//create the scanner
       String line = "";
       int lineNumber = 0;
          try{
-           read = new Scanner(new File ("intensity.txt"));
+           read = new Scanner(new File ("intensity.txt"));//open the file
            while (read.hasNextLine()) {
         	   line = read.nextLine();//grab each line
-        	   Scanner readLine = new Scanner(line);
+        	   Scanner readLine = new Scanner(line);//read token by token
         	   int counter = 0;
-        	   while (readLine.hasNext()) {
-        		   String token = readLine.next();
+        	   while (readLine.hasNext()) {//while tokens to read
+        		   String token = readLine.next();//read the next token
         		   intensityMatrix[lineNumber][counter++] = Integer.parseInt(token);
         	   }
-        	   readLine.close();
+        	   readLine.close();//close the scanner
         	   lineNumber++;
            }
          }
-         catch(FileNotFoundException EE){
+         catch(FileNotFoundException EE){//error, file not found
            System.out.println("The file intensity.txt does not exist");
          }
-      read.close();
+      read.close();//close the scanner
     }
     
     /*This method opens the color code text file containing the color code matrix with the histogram bin values for each image.
      * The contents of the matrix are processed and stored in a two dimensional array called colorCodeMatrix.
     */
     private void readColorCodeFile(){
-      Scanner read = null;
+      Scanner read = null;//create a new scanner
       String line = "";
       int lineNumber = 0;
          try{
-           read = new Scanner(new File ("colorCodes.txt"));
+           read = new Scanner(new File ("colorCodes.txt"));//find the file
            while (read.hasNextLine()) {
-        	   line = read.nextLine();
-        	   Scanner readLine = new Scanner(line);
+        	   line = read.nextLine();//read line by line
+        	   Scanner readLine = new Scanner(line);//read token by token
         	   int counter = 0;
-        	   while (readLine.hasNext()) {
+        	   while (readLine.hasNext()) {//while more tokens keep reading.
         		   String token = readLine.next();
         		   colorCodeMatrix[lineNumber][counter++] = Integer.parseInt(token);
         	   }
-        	   readLine.close();
+        	   readLine.close();//close the scanner
         	   lineNumber++;
            }
          }
-         catch(FileNotFoundException EE){
+         catch(FileNotFoundException EE){//error: file not found
            System.out.println("The file colorCodes.txt does not exist");
          }
-      read.close();
+      read.close();//close the scanner
     }
     
     /*This method displays the first twenty images in the panelBottom.  The for loop starts at number one and gets the image
@@ -255,31 +265,34 @@ public class CBIR extends JFrame {
     */
     private static void displayFirstPage(){
       int imageButNo = 0;
-      panelBottom1.removeAll(); 
+      panelBottom1.removeAll(); //remove everything
       for(int i = 1; i < 21; i++){
-        imageButNo = buttonOrder[i];
+        imageButNo = buttonOrder[i];//add everything back
         panelBottom1.add(button[imageButNo]);
         panelBottom1.add(checkbox[imageButNo]);
         imageCount++;
       }
-      panelBottom1.revalidate();
+      panelBottom1.revalidate();//update the gui graphics
       panelBottom1.repaint();
 
     }
     
-    //bubble sort to sort by the colorCode
+    //Bubble sort to find the distance between this image
+    //and the selected image. Uses the Manhattan distance formula.
     protected static void sortDistance() {
-    	//reset buttonOrder
+    	//reset the order of the checkboxes to the original ordering
     	for (int i = 0; i < checkbox.length; i++) {
     		for (int j = 0; j < checkbox.length - 1; j++) {
+    			//if the checkboxes are in the wrong order, switch them.
     			if (checkbox[j].getMnemonic() > checkbox[j + 1].getMnemonic()) {
-    				JCheckBox tempo = checkbox[j];
+    				JCheckBox tempo = checkbox[j];//swap the values
     				checkbox[j] = checkbox[j + 1];
     				checkbox[j + 1] = tempo;
     			}
     		}
     	}
     	
+    	//reset button order to the original ordering
     	for (int i = 1; i < 101; i++) {
     		buttonOrder[i] = i;
     	}
@@ -287,6 +300,7 @@ public class CBIR extends JFrame {
     	//bubble sort of the values for distance
     	for (int i = 1; i <= 100; i++) {
     		for (int j = 1; j < 100; j++) {
+    			//if this image is more different then the next, swap
     			if (distance[j - 1] > distance[j]) {
     				//swap button order
     				int temp = buttonOrder[j];
@@ -298,6 +312,7 @@ public class CBIR extends JFrame {
     				distance[j - 1] = distance[j];
     				distance[j] = temporary;
     				
+    				//swap checkboxes
     				JCheckBox tempo = checkbox[j];
     				checkbox[j] = checkbox[j + 1];
     				checkbox[j + 1] = tempo;
@@ -307,81 +322,96 @@ public class CBIR extends JFrame {
     }
     
     //enable buttons and relevance feedback.
+    //when the gui is started, most of the buttons are turned off
+    //until this method is called.
     protected void enableButtons() {
+    	//enable all the buttons
     	relevanceFeedback.setEnabled(true);
     	intensity.setEnabled(true);
     	colorCode.setEnabled(true);
         previousPage.setEnabled(true);
         nextPage.setEnabled(true);
         colorPlusIntensity.setEnabled(true);
+        //allow the RF feature to be enabled
         relevanceFeedback.addActionListener(new relevanceFeedbackEnabled());
     }
     
-    //redraw the bottom panel
+    //after a query has been generated, the graphics have
+    //to be updated to reflect the new ordering.
     protected void refresh() {
-    	panelBottom1.removeAll();
+    	panelBottom1.removeAll();//remove everything
         int count = imageCount;
         int imageButNo = 0;
-        for (int i = imageCount - 20; i < count; i++) {
-      	  imageButNo = buttonOrder[i];
+        for (int i = imageCount - 20; i < count; i++) {//add everything back
+      	  imageButNo = buttonOrder[i];//add the correct images in order
             panelBottom1.add(button[imageButNo]);
-            panelBottom1.add(checkbox[i]);//TODO:Display this checkbox
+            panelBottom1.add(checkbox[i]);
         }
-        panelBottom1.revalidate();
+        panelBottom1.revalidate();//update the graphics
         panelBottom1.repaint();
     }
     
+    //this method finds the Manhattan distance between this image
+    //and the selected image using the color code histogram.
     private static double manhattanCC(int index) {
-    	int testPicture = picNo - 1;
-    	double distance = 0;
+    	int testPicture = picNo - 1;//picture being compared
+    	double distance = 0;//distance between the images
     	for (int i = 0; i < 64; i++) {
     		//Manhattan Distance Formula
     		double weightOne = colorCodeMatrix[index][i] / (double) imageSize[index + 1];
     		double weightTwo = colorCodeMatrix[testPicture][i] / (double) imageSize[picNo];
-    		distance += Math.abs(weightOne - weightTwo);
+    		distance += Math.abs(weightOne - weightTwo);//total distance
     	}
-    	return distance;
+    	return distance;//return the distance between this image and the other image
     }
     
+  //this method finds the Manhattan distance between this image
+    //and the selected image using the intensity histogram.
     private static double manhattanIntensity(int index) {
-    	int testPicture = picNo - 1;
-    	double distance = 0;
+    	int testPicture = picNo - 1;//picture being compared
+    	double distance = 0;//distance between the images
     	for (int i = 0; i < 26; i++) {
     		//Manhattan Distance Formula
     		double weightOne = intensityMatrix[index][i] / (double) imageSize[index + 1];
     		double weightTwo = intensityMatrix[testPicture][i] / (double) imageSize[picNo];
-    		distance += Math.abs(weightOne - weightTwo);
+    		distance += Math.abs(weightOne - weightTwo);//total distance
     	}
-    	return distance;
+    	return distance;//return the distance between this image and the other image
     }
     
-    private static double CCPlusIntensity(int index) {//TODO: multiply by the weight
+    //returns the result of adding the distance of the Manhattan
+    //distance for intensity and color code histograms.
+    private static double CCPlusIntensity(int index) {
     	return manhattanIntensity(index) + manhattanCC(index);
     }
     
+    //Returns the average of an array
     private static double average(double[] array) {
     	double sum = 0;
-    	int counter = 0;
+    	int counter = 0;//number of items in the array
     	for (int i = 0; i < array.length; i++) {
     		sum += array[i];
     		counter++;
     	}
-    	sum /= counter;
-    	return sum;
+    	sum /= counter;//get the average
+    	return sum;///return the average
     }
     
+    //returns the standard deviation of an array
     private static double stdev(double[] array, double mean) {
     	double sum = 0;
-    	int counter = 0;
+    	int counter = 0;//the number of objects in the array
     	for (int i = 0; i < array.length; i++) {
     		sum += ((array[i] - mean) * (array[i] - mean));
     		counter++;
     	}
-    	sum /= counter;
+    	sum /= counter;//variance of the array
     	
-    	return Math.sqrt(sum);
+    	return Math.sqrt(sum);//return the stdev of the array
     }
     
+    //Submatrix is a matrix that contains all of the values of images marked relevant.
+    //this allows for the code to be able
     private static void addToSubmatrix(int index) {
     	double[][] array = new double[submatrixSize][90];
     	for (int i = 0; i < submatrixSize - 1; i++) {
@@ -396,7 +426,7 @@ public class CBIR extends JFrame {
     		double weightOne = intensityMatrix[index - 1][i] / (double) imageSize[index];
     		double weightTwo = intensityMatrix[picNo - 1][i] / (double) imageSize[picNo];
     		distance = Math.abs(weightOne - weightTwo);
-    		array[submatrixSize - 1][i] = distance;
+    		array[submatrixSize - 1][i] = distance;//add the distance to the submatrix
     	}
     	distance = 0;
     	for (int i = 0; i < 64; i++) {
@@ -404,35 +434,56 @@ public class CBIR extends JFrame {
     		double weightOne = colorCodeMatrix[index - 1][i] / (double) imageSize[index];
     		double weightTwo = colorCodeMatrix[picNo - 1][i] / (double) imageSize[picNo];
     		distance = Math.abs(weightOne - weightTwo);
-    		array[submatrixSize - 1][i + 26] = distance;
+    		array[submatrixSize - 1][i + 26] = distance;//add the distance to the submatrix
     	}
     	
-    	submatrix = array;
+    	submatrix = array;//assign the temporary array to the submatrix. New submatrix created.
     }
     
+    //This method updates the weights for each histogram bin.
     private static void updateWeights() {
     	double sum = 0;
-    	for (int i = 0; i < 90; i++) {
+    	for (int i = 0; i < 90; i++) {//for each histogram value
     		double[] array = new double[submatrixSize];
     		for (int j = 0; j < submatrixSize; j++) {
-    			array[j] = submatrix[j][i];
+    			array[j] = submatrix[j][i];//create an array of values of each image in the same histogram bin
     		}
-    		double avg = average(array);
-    		double stdv = stdev(array, avg);
-    		if (stdv == 0) {
+    		double avg = average(array);//get the average of the image
+    		double stdv = stdev(array, avg);//get the standard deviation of the image
+    		if (stdv == 0) {//never let standard deviation equal zero
     			stdv = 1000000.0;
     		}
-    		weight[i] = 1/stdv;
+    		weight[i] = 1/stdv;//update the weight
     		sum += weight[i];
     	}
     	for (int i = 0; i < 90; i++) {
-    		double normalized = weight[i] / sum;
-    		weight[i] = normalized;
+    		double normalized = weight[i] / sum;//normalize the weight
+    		weight[i] = normalized;//the weights are now normalized
     	}
     }
     
-    private static void updateDistance() {//TODO: multiply the distance by the weight
+    //This method updates the distance between two images based
+    //on the normalized weights in the previous method
+    private static double updateDistance(int index) {
+    	//intensity distance
+    	int testPicture = picNo - 1;//image selected
+    	double distance = 0;
+    	for (int i = 0; i < 26; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = intensityMatrix[index][i] / (double) imageSize[index + 1];
+    		double weightTwo = intensityMatrix[testPicture][i] / (double) imageSize[picNo];
+    		distance += weight[i] * Math.abs(weightOne - weightTwo);//get the total weight
+    	}
     	
+    	//Color Code Distance
+    	testPicture = picNo - 1;//image selected
+    	for (int i = 0; i < 64; i++) {
+    		//Manhattan Distance Formula
+    		double weightOne = colorCodeMatrix[index][i] / (double) imageSize[index + 1];
+    		double weightTwo = colorCodeMatrix[testPicture][i] / (double) imageSize[picNo];
+    		distance += weight[i + 26] * Math.abs(weightOne - weightTwo);//get the total weight
+    	}
+    	return distance;//return the total distance of the two images
     }
     
     /*This class implements an ActionListener for each iconButton.  When an icon button is clicked, the image on the 
@@ -451,7 +502,7 @@ public class CBIR extends JFrame {
         photographLabel.setIcon(iconUsed);
         picNo = pNo;
         checkbox[picNo].setSelected(true);
-        if (!imageSelected) {
+        if (!imageSelected) {//if the buttons are not enabled, enable them.
         	enableButtons();
         }
         imageSelected = true;
@@ -523,7 +574,7 @@ public class CBIR extends JFrame {
     private class relevanceFeedbackEnabled implements ActionListener {
     	public void actionPerformed (ActionEvent e) {
     		for (int i = 1; i < checkbox.length; i++) {
-    			checkbox[i].setEnabled(true);
+    			checkbox[i].setEnabled(true);//allow the checkboxes to be clicked
     		}
     	}
     }
@@ -541,13 +592,13 @@ public class CBIR extends JFrame {
       public void actionPerformed( ActionEvent e){
           for (int i = 0; i < 100; i++) {
         	  if (i == (picNo - 1)) {
-        		  distance[i] = 0;
-        		  continue;
+        		  distance[i] = 0;//this is the selected image
+        		  continue;//so the distance is 0 since this is the image.
         	  }
-        	  distance[i] = manhattanIntensity(i);
+        	  distance[i] = manhattanIntensity(i);//get the distance of the images
           }
           
-         sortDistance();
+         sortDistance();//sort the images in the new order
           refresh();//update gui
     }
   }
@@ -565,68 +616,64 @@ public class CBIR extends JFrame {
               
     	  for (int i = 0; i < 100; i++) {//for one hundred photos
     		  if (i == (picNo - 1)) {
-    			  distance[i] = 0;
+    			  distance[i] = 0;//this is the image so don't count it.
     			continue;
     		  }
     		  distance[i] = manhattanCC(i);//get the Manhattan distance for color coding
     	  }
-    	  sortDistance();
-          refresh();
+    	  sortDistance();//sort the buttons in the new order.
+          refresh();//redraw the gui
        }
     }
     
+    //return the results of combining color code histograms and intensity histograms.
     private class CCPlusIntensity implements ActionListener {
     	
     	public void actionPerformed(ActionEvent e) {
     		for (int i = 0; i < 100; i++) {//for one hundred photos
       		  if (i == (picNo - 1)) {
-      			  distance[i] = 0;
+      			  distance[i] = 0;//this is the image so don't count it.
       			continue;
       		  }
-      		  distance[i] = CCPlusIntensity(i);
+      		  distance[i] = CCPlusIntensity(i);//get the manhattan distance
       	    }
-    		sortDistance();
-    		refresh();
+    		sortDistance();//sort the images based upon the distance
+    		refresh();//redraw the gui
     	}
     }
     
+    //Relevance Feedback class allows for the user to select which images are relevant to the query.
     private class RF implements ActionListener {
     	
-    	int index;
+    	int index;//index of the checkbox
     	
     	public RF(int index) {
     		this.index = index;
     	}
     	
+    	//this method creates a submatrix of each image that is selected relevant
+    	//and sorts the images based upon the user feedback.
     	public void actionPerformed(ActionEvent e) {
-    		/*Algorithm for RF
-    		 * add the new image to the submatrix
-    		 * Update weights
-    		 * sortDistance();
-    		 * */
-    		
-    		submatrixSize = 0;
-    		for (int i = 1; i < checkbox.length; i++) {
+    		submatrixSize = 0;//originally the submatrix is zero
+    		for (int i = 1; i < checkbox.length; i++) {//get the size of the submatrix
     			if (checkbox[i].isSelected()) { submatrixSize++; }
     		}
     		
-    		submatrix = new double[submatrixSize][90];
-    		addToSubmatrix(index);
+    		submatrix = new double[submatrixSize][90];//create a new submatrix
+    		addToSubmatrix(index);//fill the submatrix
     		
-    		updateWeights();
-    		
-    		updateDistance();//TODO: Fill this out
+    		updateWeights();//change the default weights to normalizd weights.
     		
     		for (int i = 0; i < 100; i++) {//for one hundred photos
-        	  if (i == (picNo - 1)) {
-        		 distance[i] = 0;
-        		 continue;
-        	  }
-        	  distance[i] = CCPlusIntensity(i);
-            }
+      		  if (i == (picNo - 1)) {
+      			  distance[i] = 0;//this is the photo so place first.
+      			continue;
+      		  }
+      		  distance[i] = updateDistance(i);//get the Manhattan distance for color coding
+      	  }
     		
-    		sortDistance();
-    		refresh();
+    		sortDistance();//sort the images based upon manhattan distance
+    		refresh();//redraw the GUI
     	}
     }
 }
