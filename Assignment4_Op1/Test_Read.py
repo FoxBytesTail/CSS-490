@@ -1,28 +1,76 @@
-import wave as w
+"""
+A test file for reading in data from a .wav file.
+This program requires the scipy package to be installed.
+"""
 from scipy.io import wavfile
 from scipy.fftpack import fft
 import matplotlib.pyplot as plt
+import numpy as n
 
-fs, data = wavfile.read('./audio/music/mu1.wav')
+#Returns an array of features
+def extract_feature(data):
+    pass
 
-print "Sampling Frequency " + str(fs)
-print "Amplitudes " + str(data)
-print "Number of samples " + str(len(data))
-print data[0:16000:1000]
+def get_energy(data):
+    return n.cumsum(data**2)[-1]
+    
+def get_zeroCrossRate(data):
+    sum = 0
+    n = len(data)
+    
+    for i in xrange(n-1):
+        global sign_a
+        global sign_b
+        sign_a = 1
+        sign_b = -1
+        
+        if data[i] < 0:
+            sign_a = -1
+        if data[i+1] < 0:
+            sign_b = 1
+            
+        sum = sum + sign_a + sign_b
+        
+    return sum/(2*(n-1))
+    
+def get_bandwidth(data):
+    return max(data) - min(data)
+    
+def get_spectral_centroid(data):
+    full_spectrum = fft(data) # calculate fourier transform (complex numbers list)
+    spec_len = len(full_spectrum)/2  # you only need half of the fft list (real signal symmetry)
+    full_spectrum = abs(full_spectrum[:spec_len-1])
+    
+    num = n.cumsum(full_spectrum * n.arange(len(full_spectrum)))[-1]
+    denum = n.cumsum(n.arange(len(full_spectrum)))[-1]
+    
+    return num/denum
+    
+    
+if __name__ == '__main__':
+    fs, data = wavfile.read('./audio/music/mu1.wav')
+    
+    print "Sampling Frequency " + str(fs)
+    print "Amplitudes " + str(data)
+    print "Number of samples " + str(len(data))
+    print data[0:16000:1000]
+    
+    plt.subplot(2,1,1)
+    plt.title('Input File')
+    plt.ylabel("Amplitude")
+    plt.xlabel("Num Samples")
+    plt.plot(data, 'g')
 
-plt.subplot(2,1,1)
-plt.title('Input File')
-plt.ylabel("Amplitude")
-plt.xlabel("Num Samples")
-plt.plot(data, 'g')
 
-b=[(ele/2**16.)*2-1 for ele in data] # this is 8-bit track, b is now normalized on [-1,1)
-c = fft(data) # calculate fourier transform (complex numbers list)
-d = len(c)/2  # you only need half of the fft list (real signal symmetry)
+    get_spectral_centroid(data)
+    
+    c = fft(data) # calculate fourier transform (complex numbers list)
+    d = len(c)/2  # you only need half of the fft list (real signal symmetry)
 
-plt.subplot(2,1,2)
-plt.title('Spectrum')
-plt.xlabel("Frequency")
-plt.ylabel("dB?")
-plt.plot(abs(c[:(d-1)]),'r') 
-plt.show()
+    plt.subplot(2,1,2)
+    plt.title('Spectrum')
+    plt.xlabel("Frequency")
+    plt.ylabel("dB?")
+    plt.plot(abs(c[:(d-1)]),'r') 
+    plt.show()
+    
