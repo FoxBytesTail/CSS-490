@@ -34,8 +34,7 @@ def get_zeroCrossRate(data):
     return sum/(2*(n-1))
     
 def get_bandwidth(data):
-    spec = abs(fft(data)[:(len(data)/2-1)])
-    return max(spec) - min(spec)
+    return len(data)/2 - 1
     
 def get_spectral_centroid(data):
     full_spectrum = abs(fft(data)[:(len(data)/2-1)])
