@@ -34,12 +34,11 @@ def get_zeroCrossRate(data):
     return sum/(2*(n-1))
     
 def get_bandwidth(data):
-    return max(data) - min(data)
+    spec = abs(fft(data)[:(len(data)/2-1)])
+    return max(spec) - min(spec)
     
 def get_spectral_centroid(data):
-    full_spectrum = fft(data) # calculate fourier transform (complex numbers list)
-    spec_len = len(full_spectrum)/2  # you only need half of the fft list (real signal symmetry)
-    full_spectrum = abs(full_spectrum[:spec_len-1])
+    full_spectrum = abs(fft(data)[:(len(data)/2-1)])
     
     num = n.cumsum(full_spectrum * n.arange(len(full_spectrum)))[-1]
     denum = n.cumsum(n.arange(len(full_spectrum)))[-1]
