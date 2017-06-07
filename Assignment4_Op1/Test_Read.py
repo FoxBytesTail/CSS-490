@@ -13,15 +13,29 @@ class AudioClassifier():
         self.constants = {'FILE_NAME' : 0, 'ENERGY' : 1, 'CROSS_RATE' : 2, 
                         'BANDWIDTH' : 3, 'SPECTRAL_CENTROID' : 4, 'LABEL' : 5} 
                         
-        self.file_list = self.read_files()
-        self.feature_array = n.zeros((len(self.file_list), len(self.constants)), dtype='f')    
+        self.training_ratio = 2/3
+        self.classifying_ratio = 1/3
+                        
+        self.speech_file_list = self.read_files('SPEECH')
+        self.audio_file_list = self.read_files('AUDIO')
+        
+        self.feature_array = n.zeros((len(self.speech_file_list + self.audio_file_list), 
+                                                            len(self.constants)), dtype='f')    
+        
+    
+    def classify(self, file_list):
+        self.extract_features(False)
+    
+    def gen_model(self, file_list):
+        self.extract_features()
         
     
     #Returns an array of features
-    def extract_features(self, data, file_list):
+    def extract_features(self, training = True):
         
-        for f in file_list:
+        for f in self.audio_file_list:
             fs, data = wavfile.read('./audio/music/mu1.wav')
+            fs, data = wavfile.read(f)
             
             energy = self.get_energy(data)
             cross_rate = self.get_zeroCrossRate(data)
@@ -34,10 +48,24 @@ class AudioClassifier():
                 self.feature_array[row][self.constants['CROSS_RATE']] = cross_rate
                 self.feature_array[row][self.constants['BANDWIDTH']] = bandwidth
                 self.feature_array[row][self.constants['SPECTRAL_CENTROID']] = spectral_centroid
-                self.feature_array[row][self.constants['LABEL']] = energy
+                self.feature_array[row][self.constants['LABEL']] = 'yes' if training else self.classify(f)
                 
-        print
-        print "Feature Array"
+        for f in self.speech_file_list:
+            fs, data = wavfile.read(f)
+            
+            energy = self.get_energy(data)
+            cross_rate = self.get_zeroCrossRate(data)
+            bandwidth = self.get_bandwidth(data)
+            spectral_centroid = self.get_spectral_centroid(data)
+            
+            for row in xrange(n.shape(self.feature_array)[0]):
+                self.feature_array[row][self.constants['FILE_NAME']] = f
+                self.feature_array[row][self.constants['ENERGY']] = energy
+                self.feature_array[row][self.constants['CROSS_RATE']] = cross_rate
+                self.feature_array[row][self.constants['BANDWIDTH']] = bandwidth
+                self.feature_array[row][self.constants['SPECTRAL_CENTROID']] = spectral_centroid
+                self.feature_array[row][self.constants['LABEL']] = 'no' if training else self.classify(f) 
+                
         print self.feature_array
                 
         
@@ -100,11 +128,13 @@ if __name__ == '__main__':
     #fs, data = wavfile.read('./audio/speech/sp3.wav')
     
     aclassifer = AudioClassifier()
+    aclassifer.extract_features(data)
     
-    print "Sampling Frequency " + str(fs)
-    print "Amplitudes " + str(data)
-    print "Number of samples " + str(len(data))
+    #print "Sampling Frequency " + str(fs)
+    #print "Amplitudes " + str(data)
+    #print "Number of samples " + str(len(data))
     
+    """
     plt.subplot(3,1,1)
     plt.title('Input File')
     plt.ylabel("Amplitude")
@@ -122,7 +152,5 @@ if __name__ == '__main__':
     plt.plot(c[:(len(c)-1)],'r')     
     
     plt.show()
-    
-    aclassifer.extract_features(data)
-
+    """
     
