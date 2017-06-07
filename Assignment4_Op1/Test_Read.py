@@ -120,7 +120,24 @@ class AudioClassifier():
         return num/denum
         
     def read_files(self):
-        pass
+    	file_list = []
+    	#load the music files
+       	for x in range(0, 20):
+       		path = './audio/music/mu'
+       		number = x
+       		extension = '.wav'
+       		file_list.append(path + number + extension)
+
+       	#load the speech files
+       	for x in range(20, 40):
+       		path = './audio/music/sp'
+       		number = x
+       		extension = '.wav'
+       		file_list.append(path + number + extension)
+
+       	#index 0 - 19 are music files
+       	#index 20 - 39 are speech files
+       	return file_list
         
     
 if __name__ == '__main__':
